@@ -2,7 +2,6 @@ services:
   # Deploy the frontend static website on Render's free, ultra-fast CDN
   - type: web
     name: defendx-frontend
-    env: static
+    runtime: static
     buildCommand: ""
-    publishPath: ./frontend
-    autoDeploy: true
+    staticPublishPath: ./frontend
