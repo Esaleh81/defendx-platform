@@ -1,0 +1,6 @@
+AT C drive directly
+
+Server on Render to run
+
+cd C:\defendx-platform\backend
+node server.js  
