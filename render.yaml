@@ -8,7 +8,7 @@ services:
 
   # 2. Backend API Web Service
   - type: web
-    name: defendx-backend_new
+    name: defendx-backend
     runtime: node
     rootDir: ./backend
     buildCommand: "npm install"
@@ -17,4 +17,4 @@ services:
       - key: PORT
         value: 5000
       - key: DATABASE_URL
-        sync: false # We will paste your secret Database URL manually inside the Render dashboard
+        sync: false
