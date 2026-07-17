@@ -129,13 +129,24 @@ app.get('/api/health', async (req, res) => {
    ========================================== */
 
 // Configure Nodemailer transporter using dynamic environment credentials
+// Configure Nodemailer transporter with secure connection settings
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // Keep Gmail or adjust if using a custom SMTP provider
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // Use true for port 465 (SSL)
   auth: {
-    user: process.env.NOTIFICATION_EMAIL_USER, // Your sending email (from Render Env Variables)
-    pass: process.env.NOTIFICATION_EMAIL_PASS  // Your email App Password (from Render Env Variables)
+    user: process.env.NOTIFICATION_EMAIL_USER, // Your sending email
+    pass: process.env.NOTIFICATION_EMAIL_PASS  // Your 16-character App Password
   }
 });
+
+// const transporter = nodemailer.createTransport({
+//   service: 'gmail', // Keep Gmail or adjust if using a custom SMTP provider
+//   auth: {
+//     user: process.env.NOTIFICATION_EMAIL_USER, // Your sending email (from Render Env Variables)
+//     pass: process.env.NOTIFICATION_EMAIL_PASS  // Your email App Password (from Render Env Variables)
+//   }
+// });
 
 app.post('/api/contact', async (req, res) => {
   const { name, email, subject, message } = req.body;
