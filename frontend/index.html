@@ -3672,57 +3672,52 @@
             </div>
           </div>
 
-          <form id="contactForm"
-                action="https://formsubmit.co/esaleh81@gmail.com"
-                method="POST"
-                style="width: 100%; box-sizing: border-box;">
+      <form id="contactForm" style="width: 100%; box-sizing: border-box;">
 
-            <input type="hidden" name="_subject" value="New DefendX Briefing Request!">
-            <input type="hidden" name="_honey" style="display:none">
-            <input type="hidden" name="_template" value="box">
+  <div class="form-row" style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+    <div class="form-group" style="flex: 1 1 150px;">
+      <input type="text" id="firstName" required placeholder="First Name*" style="width: 100%; box-sizing: border-box;">
+    </div>
+    <div class="form-group" style="flex: 1 1 150px;">
+      <input type="text" id="lastName" required placeholder="Last Name*" style="width: 100%; box-sizing: border-box;">
+    </div>
+  </div>
 
-            <div class="form-row" style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
-              <div class="form-group" style="flex: 1 1 150px;">
-                <input type="text" name="First Name" required placeholder="First Name*" style="width: 100%; box-sizing: border-box;">
-              </div>
-              <div class="form-group" style="flex: 1 1 150px;">
-                <input type="text" name="Last Name" required placeholder="Last Name*" style="width: 100%; box-sizing: border-box;">
-              </div>
-            </div>
+  <div class="form-group" style="margin-bottom: 15px;">
+    <input type="text" id="organization" required placeholder="Department / Organization*" style="width: 100%; box-sizing: border-box;">
+  </div>
 
-            <div class="form-group" style="margin-bottom: 15px;">
-              <input type="text" name="Organization" required placeholder="Department / Organization*" style="width: 100%; box-sizing: border-box;">
-            </div>
+  <div class="form-group" style="margin-bottom: 15px;">
+    <input type="email" id="email" required placeholder="Youremail@organization.com*" style="width: 100%; box-sizing: border-box;">
+  </div>
 
-            <div class="form-group" style="margin-bottom: 15px;">
-              <input type="email" name="Email" required placeholder="Youremail@organization.com*" style="width: 100%; box-sizing: border-box;">
-            </div>
+  <div class="form-group" style="margin-bottom: 15px;">
+    <select id="userRole" required style="width: 100%; box-sizing: border-box;">
+      <option value="">— Select your role —</option>
+      <option value="Airport Authority">Airport / Aviation Authority</option>
+      <option value="Correctional Officer">Correctional / Public Safety</option>
+      <option value="Utility Operator">Energy / Utility Operator</option>
+      <option value="National Defence">National Defence / Security Forces</option>
+      <option value="Border Security">Border Security</option>
+      <option value="System Integrator">System Integrator</option>
+      <option value="Investor">Investor / VC</option>
+      <option value="Procurement Officer">Government Procurement</option>
+      <option value="Other">Other</option>
+    </select>
+  </div>
 
-            <div class="form-group" style="margin-bottom: 15px;">
-              <select name="User Role" required style="width: 100%; box-sizing: border-box;">
-                <option value="">— Select your role —</option>
-                <option value="Airport Authority">Airport / Aviation Authority</option>
-                <option value="Correctional Officer">Correctional / Public Safety</option>
-                <option value="Utility Operator">Energy / Utility Operator</option>
-                <option value="National Defence">National Defence / Security Forces</option>
-                <option value="Border Security">Border Security</option>
-                <option value="System Integrator">System Integrator</option>
-                <option value="Investor">Investor / VC</option>
-                <option value="Procurement Officer">Government Procurement</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
+  <div class="form-group" style="margin-bottom: 15px;">
+    <textarea id="message" required placeholder="Briefly describe your operational environment and the challenge you're trying to solve…" style="width: 100%; box-sizing: border-box; min-height: 120px;"></textarea>
+  </div>
 
-            <div class="form-group" style="margin-bottom: 15px;">
-              <textarea name="Message" required placeholder="Briefly describe your operational environment and the challenge you're trying to solve…" style="width: 100%; box-sizing: border-box; min-height: 120px;"></textarea>
-            </div>
+  <button type="submit" class="btn btn-gold" style="width:100%; padding:15px; font-size:14px; box-sizing: border-box;">
+    Submit
+  </button>
 
-            <button type="submit" class="btn btn-gold"
-                    style="width:100%; padding:15px; font-size:14px; box-sizing: border-box;">
-              Submit
-            </button>
+  <!-- Status message placeholder -->
+  <div id="formStatus" style="margin-top: 15px; font-weight: bold; text-align: center;"></div>
 
-          </form>
+</form>
 
           <p style="font-size:11px; color:var(--lgray); text-align:center; margin-top:12px; line-height: 1.4;">
             All inquiries are treated as strictly proprietary information. DefendX Technologies does not share contact details with third parties.
@@ -4729,5 +4724,67 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 </script> -->
+<script>
+  const contactForm = document.getElementById('contactForm');
+  const formStatus = document.getElementById('formStatus');
+
+  if (contactForm) {
+    contactForm.addEventListener('submit', async (e) => {
+      e.preventDefault(); // Stop page refresh
+      
+      formStatus.innerText = "Sending message...";
+      formStatus.style.color = "#FFD700"; // Clean gold/yellow status color
+
+      // Dynamically target localhost for local testing, or your live Render URL
+      const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:5000/api/contact'
+        : 'https://defendx-backend.onrender.com/api/contact';
+
+      // Capture inputs using updated IDs
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      const organization = document.getElementById('organization').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const role = document.getElementById('userRole').value;
+      const originalMessage = document.getElementById('message').value.trim();
+
+      // Combine information gracefully to fit your database fields
+      const fullName = `${firstName} ${lastName}`;
+      const subjectLine = `Inquiry from ${organization} (${role})`;
+      
+      const payload = {
+        name: fullName,
+        email: email,
+        subject: subjectLine,
+        message: originalMessage
+      };
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          formStatus.innerText = "Message sent successfully! Our security team will contact you shortly.";
+          formStatus.style.color = "#2ecc71"; // Success green
+          contactForm.reset(); // Clear the inputs
+        } else {
+          formStatus.innerText = "Error: " + (result.error || "Failed to send message.");
+          formStatus.style.color = "#e74c3c"; // Error red
+        }
+      } catch (err) {
+        console.error('Submission error:', err);
+        formStatus.innerText = "Could not reach the server. Please try again later.";
+        formStatus.style.color = "#e74c3c";
+      }
+    });
+  }
+</script>
 </body>
 </html>
