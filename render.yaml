@@ -1,7 +1,20 @@
 services:
-  # Deploy the frontend static website on Render's free, ultra-fast CDN
+  # 1. Frontend Static Website
   - type: web
     name: defendx-frontend
     runtime: static
     buildCommand: ""
     staticPublishPath: ./frontend
+
+  # 2. Backend API Web Service
+  - type: web
+    name: defendx-backend
+    runtime: node
+    rootDir: ./backend
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        sync: false # We will paste your secret Database URL manually inside the Render dashboard
