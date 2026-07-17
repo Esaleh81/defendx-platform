@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const { Pool } = require('pg');
 require('dotenv').config();
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 5000; // Render expects default to port 5000 or env port
@@ -16,6 +17,7 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false } // Required for secure Render connections
 });
+
 // ==========================================
 // DATABASE AUTO-INITIALIZATION SETUP
 // ==========================================
@@ -48,6 +50,7 @@ const initializeDatabase = async () => {
 
 // Execute database initialization immediately on server start
 initializeDatabase();
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -122,8 +125,17 @@ app.get('/api/health', async (req, res) => {
 });
 
 /* ==========================================
-   ROUTE 2: WEB LANDING PAGE - CONTACT FORM (PostgreSQL backend)
+   ROUTE 2: WEB LANDING PAGE - CONTACT FORM (PostgreSQL & Nodemailer integration)
    ========================================== */
+
+// Configure Nodemailer transporter using dynamic environment credentials
+const transporter = nodemailer.createTransport({
+  service: 'gmail', // Keep Gmail or adjust if using a custom SMTP provider
+  auth: {
+    user: process.env.NOTIFICATION_EMAIL_USER, // Your sending email (from Render Env Variables)
+    pass: process.env.NOTIFICATION_EMAIL_PASS  // Your email App Password (from Render Env Variables)
+  }
+});
 
 app.post('/api/contact', async (req, res) => {
   const { name, email, subject, message } = req.body;
@@ -133,15 +145,37 @@ app.post('/api/contact', async (req, res) => {
   }
 
   try {
+    // 1. Write the submission details to your PostgreSQL database on Render
     const queryText = `
       INSERT INTO contacts (name, email, subject, message, created_at)
       VALUES ($1, $2, $3, $4, NOW())
       RETURNING *;
     `;
     const values = [name, email, subject || 'General Web Inquiry', message];
-    
     const result = await pool.query(queryText, values);
     
+    // 2. Dispatch instant email notification to your inbox
+    const mailOptions = {
+      from: `"DefendX Contact Center" <${process.env.NOTIFICATION_EMAIL_USER}>`,
+      to: process.env.NOTIFICATION_EMAIL_TO, // Your target inbox address (from Render Env Variables)
+      subject: `🚨 Web Alert: ${subject || 'General Web Inquiry'}`,
+      text: `A visitor submitted a message on the DefendX website!\n\n` +
+            `• Sender Name: ${name}\n` +
+            `• Sender Email: ${email}\n\n` +
+            `• Message Details:\n"${message}"\n\n` +
+            `This submission has been logged securely in database 'defendx-db'.`
+    };
+
+    // Send email asynchronously in the background so it doesn't block frontend execution
+    transporter.sendMail(mailOptions, (mailErr, info) => {
+      if (mailErr) {
+        console.error('Nodemailer background dispatch failed:', mailErr);
+      } else {
+        console.log('Instant email notification sent successfully:', info.response);
+      }
+    });
+    
+    // 3. Return success response to the client
     res.status(201).json({
       success: true,
       message: 'Contact form received successfully!',
