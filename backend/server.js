@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const { Pool } = require('pg');
 require('dotenv').config();
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const app = express();
 const PORT = process.env.PORT || 5000; // Render expects default to port 5000 or env port
@@ -125,28 +125,11 @@ app.get('/api/health', async (req, res) => {
 });
 
 /* ==========================================
-   ROUTE 2: WEB LANDING PAGE - CONTACT FORM (PostgreSQL & Nodemailer integration)
+   ROUTE 2: WEB LANDING PAGE - CONTACT FORM (PostgreSQL & Resend API Integration)
    ========================================== */
 
-// Configure Nodemailer transporter using dynamic environment credentials
-// Configure Nodemailer transporter with secure connection settings
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // Use true for port 465 (SSL)
-  auth: {
-    user: process.env.NOTIFICATION_EMAIL_USER, // Your sending email
-    pass: process.env.NOTIFICATION_EMAIL_PASS  // Your 16-character App Password
-  }
-});
-
-// const transporter = nodemailer.createTransport({
-//   service: 'gmail', // Keep Gmail or adjust if using a custom SMTP provider
-//   auth: {
-//     user: process.env.NOTIFICATION_EMAIL_USER, // Your sending email (from Render Env Variables)
-//     pass: process.env.NOTIFICATION_EMAIL_PASS  // Your email App Password (from Render Env Variables)
-//   }
-// });
+// Initialize Resend Client using environment variable API key
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 app.post('/api/contact', async (req, res) => {
   const { name, email, subject, message } = req.body;
@@ -165,25 +148,23 @@ app.post('/api/contact', async (req, res) => {
     const values = [name, email, subject || 'General Web Inquiry', message];
     const result = await pool.query(queryText, values);
     
-    // 2. Dispatch instant email notification to your inbox
-    const mailOptions = {
-      from: `"DefendX Contact Center" <${process.env.NOTIFICATION_EMAIL_USER}>`,
-      to: process.env.NOTIFICATION_EMAIL_TO, // Your target inbox address (from Render Env Variables)
+    // 2. Dispatch instant email notification via HTTPS API (Bypasses SMTP Blockades)
+    // Note: 'onboarding@resend.dev' can only send mail to your own account until you add a custom domain.
+    resend.emails.send({
+      from: 'DefendX Contact Center <onboarding@resend.dev>',
+      to: process.env.NOTIFICATION_EMAIL_TO, 
       subject: `🚨 Web Alert: ${subject || 'General Web Inquiry'}`,
       text: `A visitor submitted a message on the DefendX website!\n\n` +
             `• Sender Name: ${name}\n` +
             `• Sender Email: ${email}\n\n` +
             `• Message Details:\n"${message}"\n\n` +
             `This submission has been logged securely in database 'defendx-db'.`
-    };
-
-    // Send email asynchronously in the background so it doesn't block frontend execution
-    transporter.sendMail(mailOptions, (mailErr, info) => {
-      if (mailErr) {
-        console.error('Nodemailer background dispatch failed:', mailErr);
-      } else {
-        console.log('Instant email notification sent successfully:', info.response);
-      }
+    })
+    .then(info => {
+      console.log('Instant email notification sent successfully via Resend API:', info);
+    })
+    .catch(mailErr => {
+      console.error('Resend API background dispatch failed:', mailErr);
     });
     
     // 3. Return success response to the client
