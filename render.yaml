@@ -8,7 +8,7 @@ services:
 
   # 2. Backend API Web Service
   - type: web
-    name: defendx-backend
+    name: defendx-backend_new
     runtime: node
     rootDir: ./backend
     buildCommand: "npm install"
