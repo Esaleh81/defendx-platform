@@ -16,7 +16,38 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false } // Required for secure Render connections
 });
+// ==========================================
+// DATABASE AUTO-INITIALIZATION SETUP
+// ==========================================
+const initializeDatabase = async () => {
+  try {
+    console.log("Checking database schema...");
+    
+    // Create the contacts table if it's missing
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS contacts (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        subject VARCHAR(255) DEFAULT 'General Inquiry',
+        message TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    
+    // Ensure the created_at column is there in case table existed earlier without it
+    await pool.query(`
+      ALTER TABLE contacts ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    `);
 
+    console.log("Database tables initialized successfully!");
+  } catch (err) {
+    console.error("Failed to run database startup migrations:", err);
+  }
+};
+
+// Execute database initialization immediately on server start
+initializeDatabase();
 // Middleware
 app.use(cors());
 app.use(express.json());
